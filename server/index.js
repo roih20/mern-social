@@ -4,13 +4,15 @@ import dotenv from 'dotenv'
 import cors from 'cors'
 import authRoutes from './routes/user.js'
 import postRoutes from './routes/post.js'
+import bodyParser from 'body-parser'
 
 dotenv.config();
 
 const app = express();
 
 
-app.use(express.json())
+app.use(express.json());
+app.use(express.urlencoded({limit: '30mb', extended: true}))
 app.use(cors())
 
 const PORT = process.env.PORT || 4000;

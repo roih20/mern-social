@@ -25,6 +25,10 @@ const userSchema = mongoose.Schema({
     },
     avatar: {
         type: String
+    },
+    createdAt: {
+        type: Date,
+        default: new Date()
     }
 })
 

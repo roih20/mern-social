@@ -8,7 +8,7 @@ dotenv.config()
 import UserModel from "../models/users.js"
 
 export const signUp = async (req, res) => {
-    const { email, password, firstName, lastName, username } = req.body;
+    const { email, password, firstName, lastName, username, avatar } = req.body;
     try {
         const oldUser = await UserModel.findOne({ email });
 
@@ -20,7 +20,7 @@ export const signUp = async (req, res) => {
 
         const haspassword = await bcrypt.hash(password, 12);
 
-        const user = await UserModel.create({ email, password: haspassword, name: `${firstName} ${lastName}`, username })
+        const user = await UserModel.create({ email, password: haspassword, name: `${firstName} ${lastName}`, username, avatar })
 
         res.status(201).json({ user, message: "User created" });
 
@@ -42,44 +42,48 @@ export const signIn = async (req, res) => {
 
         if (!isPasswordCorrect) return res.status(400).json({ message: "Invalid credentials" });
 
-        const token = jwt.sign({ email: oldUser.email, id: oldUser._id, name: oldUser.name, username: oldUser.username }, process.env.SECRET_WORD, { expiresIn: "1h" })
+        const token = jwt.sign({ id: oldUser._id, name: oldUser.name, username: oldUser.username}, process.env.SECRET_WORD, { expiresIn: "1h" })
 
-        res.status(201).json({
+        res.status(200).json({
             result: {
-                name: oldUser.name,
-                email: oldUser.password,
-                username: oldUser.username
+               oldUser
             },
             token
         })
 
     } catch (error) {
-        console.log(error)
+        res.status(500).json({error})
     }
-}
+} 
 
 
 export const updateUser = async (req, res) => {
     const { id } = req.params;
-    const newUser = req.body;
-
+    const { name } = req.body;
+    
     try {
         if (!mongoose.isValidObjectId(id)) return res.status(404).json({ message: `No user with id: ${id}` })
-
-        await UserModel.findByIdAndUpdate(id, newUser, { new: true })
+        
+       const userUpdated = await UserModel.findByIdAndUpdate(id, {name})
 
         res.status(201).json({
-            newUser,
+            newUser: {
+                userUpdated
+            },
             message: "User updated"
         })
     } catch (error) {
-        res.status(500).json({error})
+        res.status(500).json({error: error})
     }
 
 }
 
+
+
 export const deleteUser = async (req, res) => {
     const { id } = req.params;
+
+    if(req.userId !== id) return res.status(409).json({message: "The user id doesn't match"})
     
     if(!mongoose.isValidObjectId(id)) return res.status(404).json({message: `No user with id: ${id}`})
 
@@ -88,4 +92,40 @@ export const deleteUser = async (req, res) => {
     res.json({
         message: "User deleted"
     })
+}
+
+export const changePassword = async (req, res) => {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    try {
+
+        if(req.userId !== id) return res.status(409).json({message: "The user id doesn't match"})
+
+        if(!mongoose.isValidObjectId(id)) return res.status(404).json({message: `No user with id: ${id}`})
+
+        const haspassword = await bcrypt.hash(password, 12)
+
+        await UserModel.findByIdAndUpdate(id, {password: haspassword});
+
+        res.status(201).json({
+            newpassword: haspassword,
+            message: "Password has changed"
+        })
+
+
+    } catch (error) {
+        res.status(500).json({error})
+    }
+}
+
+export const getOneUser = async (req, res) => {
+    const { username } = req.params;
+
+    try {
+        const user = await UserModel.findOne({username})
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({error})
+    }
 }

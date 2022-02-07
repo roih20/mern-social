@@ -13,13 +13,10 @@ const auth = (req, res, next) => {
         if(token && isCustomAuth){
             decodeData = jwt.verify(token, process.env.SECRET_WORD)
             
-            req.username = decodeData?.username;
-            req.name = decodeData?.name;
-           
-
+            req.userId = decodeData?.id
         }else {
             decodeData = jwt.decode(token)
-            req.username = decodeData?.sub
+            req.userId = decodeData?.sub
         }
 
         next();
